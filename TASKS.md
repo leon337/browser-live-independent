@@ -26,3 +26,14 @@ Ver TEST_REPORT_20261104.md para as provas e pendências.
 18. [ ] Human takeover com exclusividade, pausa e reconciliação.
 19. [ ] Browser headed em display virtual, separado dos monitores físicos.
 20. [ ] Autorização diferenciada para convidados e integração de outros agentes via gateway.
+
+## Recuperação de CDP — branch de experimento (04/11/2026)
+
+21. [x] Conferir main remoto e preservar branch de backup.
+22. [x] Procurar patch original e notebook Colab; patch original não estava acessível.
+23. [x] Implementar versão independente de saúde CDP e proteções do viewer no branch.
+24. [x] Rodar 12/12 testes unitários com navegador falso.
+25. [x] Registrar limites de memória no arquivo .service, sem alterar a unidade instalada.
+26. [ ] Revisão independente do código, incluindo concorrência/cancelamento e segurança.
+27. [ ] Baseline real 0/1/2 viewers durante 30–60 min, CPU/RAM/swap/PSI, Brave + Tailscale; validar retorno real após falha CDP antes de dizer resolvido.
+28. [ ] Estudar Xvfb e captura fora do CDP em branch separado, após evidências do passo 27.

@@ -51,6 +51,14 @@ A capacidade depende do site, permissões nativas, autenticação e disponibilid
 - TEST_REPORT_20261104.md: evidências da primeira validação e limitações.
 - TAILSCALE_ACCESS.md: configuração HTTPS privada para o telefone e testes de acesso.
 
+## Branch experimental de saúde CDP (não implantado)
+
+A branch `fix/cdp-health-viewer-resilience` inclui uma implementação **independente e reconstruída** a partir do resumo da revisão de outra IA. O patch original `0001-fix-verificar-saude-do-CDP-e-tornar-o-viewer-resilie.patch` e o commit original `c4995b1` **não foram encontrados** no notebook, no Colab informado nem nos arquivos disponíveis. Portanto, **esta branch não contém o commit original dessa outra IA**.
+
+Inclui sondagem real do CDP com `Browser.getVersion` (2 tentativas antes de reaproveitar ou reconstruir uma sessão ociosa); monitor somente de observação a cada 15 s; `cdp_healthy` no status; fechamento explícito da conexão SQLite; limite de três espectadores; cache de frames por aba; bloqueio serial de capturas entre espectadores; backoff por falha, com registros sanitizados; limites de memória configurados **apenas no arquivo** do serviço.
+
+**Operacional:** os testes usam navegador falso, não o Brave real. O serviço instalado e a sessão em execução **não** foram reiniciados ou atualizados com a branch experimental. Não faça deploy antes de validar recursos e a recuperação em ambiente seguro. Acesse `RESILIENCE_REVIEW_20261104.md`.
+
 ## Desenvolvimento
 
 Python 3.12 em .venv própria, dependências fixadas em requirements.lock, servidor systemd --user instalado e habilitado. Testes: `.venv/bin/python -m unittest -v runtime_tests`, `.venv/bin/python smoke.py` e `.venv/bin/python acceptance.py` (último acessa a API real e cria uma página de teste local). O serviço usa `systemctl --user status browser-live-independent.service`; a interface é acessível apenas no próprio notebook. Não versione credenciais, bancos, perfis, áudios, screenshots ou logs pessoais.
