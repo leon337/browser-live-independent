@@ -1,0 +1,18 @@
+[Unit]
+Description=Browser Live Independent Agent
+After=graphical-session.target network-online.target
+[Service]
+Type=simple
+WorkingDirectory=/home/leo/Aplicativos/browser-live-independent
+ExecStart=/home/leo/Aplicativos/browser-live-independent/.venv/bin/uvicorn app:app --host 127.0.0.1 --port 8918 --no-access-log
+Environment=DISPLAY=:0
+Environment=XAUTHORITY=/home/leo/.Xauthority
+Environment=ANONYMIZED_TELEMETRY=false
+Environment=BROWSER_USE_LOGGING_LEVEL=error
+Environment=BROWSER_USE_CLOUD_SYNC=false
+UMask=0077
+Restart=on-failure
+RestartSec=3
+TimeoutStopSec=30
+[Install]
+WantedBy=default.target
