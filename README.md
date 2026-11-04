@@ -2,7 +2,9 @@
 
 Agente independente para conversa ao vivo e tarefas no navegador. Aplicação nova, com runtime, interface, ambiente virtual, memória, serviço e perfil próprios.
 
-**Estado em 2026-11-04:** MVP operacional no notebook, com teste E2E real e confirmação independente pelo servidor. Validação acústica humana, microfone físico e inspeção visual manual ainda pendentes. Consulte CHECKLIST.md e TEST_REPORT_20261104.md.
+**Incidente aberto em 04/11/2026 (05:08–05:15 BRT):** API HTTP ativa, mas CDP/Brave falhou durante observação e navegação. **Não considerar a automação operacional/estável** apenas porque / retorna HTTP 200. [Relatório e pedido de auditoria independente](AUDITORIA_INDEPENDENTE_20261104.md). Não houve alteração do código de execução durante o diagnóstico.
+
+**Evidência histórica antes do incidente:** o MVP passou em testes E2E sintéticos, mas esses testes não cobriram a falha posterior. Ver CHECKLIST.md e TEST_REPORT_20261104.md.
 
 ## Uso no notebook
 
@@ -39,6 +41,9 @@ O módulo `viewer.py` é independente do mecanismo Gemini e utiliza a sessão `B
 A capacidade depende do site, permissões nativas, autenticação e disponibilidade/cota da API. O agente pode errar; resultados devem trazer evidência observada. STOP não desfaz ações já aceitas por sites. A interface local não é um serviço publicado na internet. O início automático é vinculado à sessão do usuário Linux.
 
 ## Planejamento e evidências
+
+- AUDITORIA_INDEPENDENTE_20261104.md: relato do incidente, evidências, hipóteses e roteiro para um revisor externo.
+- AUDIT_LOG_EXCERPTS_20261104.md: trechos técnicos sanitizados do journal; nunca usar como substituto do log original local.
 
 - PLAN.md: objetivo, requisitos, arquitetura, riscos e escopo.
 - TASKS.md: etapas de implementação.
