@@ -15,3 +15,14 @@ Ver TEST_REPORT_20261104.md para as provas e pendências.
 
 11. [x] Provisionar HTTPS privado Tailscale Serve na porta 8461, adaptando o backend e WebSockets seguros.
 12. [ ] Verificar abertura e microfone diretamente no Realme 9i com Tailscale ativo.
+
+## Observabilidade no chat — 2026-11-04
+
+13. [x] Screenshot via CDP da mesma sessão usada pelo agente (Browser Use).
+14. [x] WebSocket /view com autenticação local e verificação de Origin/Host.
+15. [x] Painel no chat, seletor de abas e seguimento automático da aba do agente.
+16. [x] Teste real de stream JPEG e acompanhamento de tarefa até página de teste.
+17. [ ] Verificação visual e de usabilidade diretamente no Realme 9i.
+18. [ ] Human takeover com exclusividade, pausa e reconciliação.
+19. [ ] Browser headed em display virtual, separado dos monitores físicos.
+20. [ ] Autorização diferenciada para convidados e integração de outros agentes via gateway.

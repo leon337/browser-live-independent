@@ -31,3 +31,9 @@ Ver CHECKLIST.md. Evidência de cada teste deve identificar data e distinguir te
 - https://aistudio.google.com/docs/live-api/session-management
 - https://aistudio.google.com/docs/live-api/tools
 - https://docs.browser-use.com/open-source/supported-models
+
+## Extensão: observabilidade do Browser Live — 2026-11-04
+
+Primeiro incremento implementado no próprio chat do Browser Live: canal `/view` autenticado, screenshot JPEG da aba que o agente usa, seletor de abas de observação, atualização periódica, integração HTTPS/WSS Tailscale e comportamento read-only. Não duplicar navegador/perfil.
+
+Próximos incrementos (não entregues): display virtual isolado dos monitores, human takeover com lease exclusivo, reconciliação ao devolver controle, autenticação específica de convidados, adaptadores para agentes externos Playwright MCP.

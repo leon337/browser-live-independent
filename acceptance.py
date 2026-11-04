@@ -50,4 +50,5 @@ async def main():
  out=Path.home()/".local/state/browser-live-independent/acceptance.json";out.write_text(json.dumps(evidence,indent=2,ensure_ascii=False))
  print("EVIDENCE",json.dumps(evidence,ensure_ascii=False),flush=True)
  server.shutdown()
-asyncio.run(main())
+if __name__ == "__main__":
+ asyncio.run(main())

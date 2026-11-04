@@ -149,7 +149,7 @@ async def origin_guard(request,call_next):
         return __import__("fastapi").responses.JSONResponse({"error":"session"},403)
     response=await call_next(request)
     response.headers["X-Content-Type-Options"]="nosniff"
-    response.headers["Content-Security-Policy"]="default-src 'self'; connect-src 'self' ws://127.0.0.1:8918 ws://localhost:8918"+(" wss://"+REMOTE_URL.netloc if REMOTE_ORIGIN else "")+"; frame-ancestors 'none'"
+    response.headers["Content-Security-Policy"]="default-src 'self'; img-src 'self' data:; connect-src 'self' ws://127.0.0.1:8918 ws://localhost:8918"+(" wss://"+REMOTE_URL.netloc if REMOTE_ORIGIN else "")+"; frame-ancestors 'none'"
     response.headers["Cache-Control"]="no-store"
     return response
 @app.get("/")
@@ -176,6 +176,13 @@ async def stop(): return await runtime.stop()
 async def browser():
     await runtime.get_browser()
     return {"ok":True}
+@app.websocket("/view")
+async def view(ws:WebSocket):
+    if not authorized_ws(ws): return await ws.close(code=1008)
+    await ws.accept()
+    from viewer import stream_viewer
+    await stream_viewer(runtime, ws)
+
 @app.websocket("/events")
 async def events(ws:WebSocket):
     if not authorized_ws(ws): return await ws.close(code=1008)
