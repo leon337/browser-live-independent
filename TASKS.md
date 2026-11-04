@@ -12,3 +12,6 @@
 10. [ ] Revisar manualmente UI e áudio físico, finalizar homologação e publicar evidências de uso humano.
 
 Ver TEST_REPORT_20261104.md para as provas e pendências.
+
+11. [x] Provisionar HTTPS privado Tailscale Serve na porta 8461, adaptando o backend e WebSockets seguros.
+12. [ ] Verificar abertura e microfone diretamente no Realme 9i com Tailscale ativo.

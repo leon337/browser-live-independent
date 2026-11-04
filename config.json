@@ -1,5 +1,6 @@
 {
   "live_model": "gemini-3.8-live",
   "planner_model": "gemini-3.5-flash-lite",
-  "fallback_model": "gemini-3.5-flash"
+  "fallback_model": "gemini-3.5-flash",
+  "remote_origin": "https://mcf-leo-n43sm.tail582305.ts.net:8461"
 }

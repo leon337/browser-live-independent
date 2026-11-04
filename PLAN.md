@@ -18,7 +18,7 @@ Agente independente para conversar por voz em tempo real e executar pedidos no n
 
 ## MVP e evolução
 MVP: voz/texto, navegação, progresso, cancelamento, histórico, persistência, documentação e testes reais.
-Futuro: conectores opcionais NVIDIA NIM, múltiplos agentes simultâneos, acesso remoto à interface. Não são necessários para a primeira entrega.
+Futuro: conectores opcionais NVIDIA NIM, múltiplos agentes simultâneos; acesso remoto privado via Tailscale Serve na porta HTTPS 8461 já provisionado em 2026-11-04, ainda pendente validação no Android. Não são necessários para a primeira entrega.
 
 ## Riscos considerados
 Rede/cota do provedor, erro de interpretação, tarefa parcialmente executada, interrupção de conexão Live, concorrência no navegador, exposição de credenciais e consumo de RAM. Perfil próprio evita disputa com o navegador das outras aplicações. Não copiar sessões autenticadas de perfis existentes.

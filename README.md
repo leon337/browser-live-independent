@@ -6,7 +6,11 @@ Agente independente para conversa ao vivo e tarefas no navegador. Aplicação no
 
 ## Uso no notebook
 
-Interface: http://127.0.0.1:8918
+Interface no notebook: http://127.0.0.1:8918
+
+Interface privada no telefone (Tailscale ligado): **https://mcf-leo-n43sm.tail582305.ts.net:8461/**
+
+O link HTTPS é disponibilizado por `tailscale serve --bg --https=8461 http://127.0.0.1:8918` e **não** por Funnel. Requer telefone pertencente à mesma tailnet, autenticado e com conexão Tailscale ativada. A porta 8461 é privada. Consulte `TAILSCALE_ACCESS.md` para diagnóstico e evidências.
 
 - **Iniciar conversa ao vivo** ativa o microfone e a conversa Gemini Live.
 - Digite um pedido: com voz ativa, o texto entra na conversa; sem voz, inicia tarefa no navegador.
@@ -32,6 +36,7 @@ A capacidade depende do site, permissões nativas, autenticação e disponibilid
 - TASKS.md: etapas de implementação.
 - CHECKLIST.md: critérios de aceite e validações pendentes.
 - TEST_REPORT_20261104.md: evidências da primeira validação e limitações.
+- TAILSCALE_ACCESS.md: configuração HTTPS privada para o telefone e testes de acesso.
 
 ## Desenvolvimento
 

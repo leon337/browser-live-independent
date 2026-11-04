@@ -2,6 +2,7 @@ from __future__ import annotations
 import asyncio, contextlib, json, os, sqlite3, time, uuid, logging, re, secrets
 from pathlib import Path
 from contextlib import asynccontextmanager
+from urllib.parse import urlsplit
 from fastapi import FastAPI, WebSocket, WebSocketDisconnect, HTTPException, Request
 from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
@@ -18,9 +19,13 @@ os.environ["ANONYMIZED_TELEMETRY"]="false"
 os.environ["BROWSER_USE_LOGGING_LEVEL"]="error"
 os.environ["BROWSER_USE_CLOUD_SYNC"]="false"
 SETTINGS=json.loads((ROOT/"config.json").read_text())
-ORIGINS={"http://127.0.0.1:8918","http://localhost:8918"}
+REMOTE_ORIGIN=SETTINGS.get("remote_origin","").rstrip("/")
+REMOTE_URL=urlsplit(REMOTE_ORIGIN)
+if REMOTE_ORIGIN and not (REMOTE_URL.scheme=="https" and REMOTE_URL.hostname and REMOTE_URL.hostname.endswith(".ts.net") and REMOTE_URL.port):
+    raise ValueError("remote_origin must be an explicit HTTPS tailnet hostname and port")
+ORIGINS={"http://127.0.0.1:8918","http://localhost:8918"} | ({REMOTE_ORIGIN} if REMOTE_ORIGIN else set())
 TOKEN=secrets.token_urlsafe(32)
-HOSTS={"127.0.0.1:8918","localhost:8918"}
+HOSTS={"127.0.0.1:8918","localhost:8918"} | ({REMOTE_URL.netloc} if REMOTE_ORIGIN else set())
 def authorized_ws(ws):
     return ws.headers.get("origin") in ORIGINS and ws.headers.get("host") in HOSTS and secrets.compare_digest(ws.cookies.get("browser_live_session",""),TOKEN)
 def clean(value):
@@ -144,7 +149,7 @@ async def origin_guard(request,call_next):
         return __import__("fastapi").responses.JSONResponse({"error":"session"},403)
     response=await call_next(request)
     response.headers["X-Content-Type-Options"]="nosniff"
-    response.headers["Content-Security-Policy"]="default-src 'self'; connect-src 'self' ws://127.0.0.1:8918 ws://localhost:8918; frame-ancestors 'none'"
+    response.headers["Content-Security-Policy"]="default-src 'self'; connect-src 'self' ws://127.0.0.1:8918 ws://localhost:8918"+(" wss://"+REMOTE_URL.netloc if REMOTE_ORIGIN else "")+"; frame-ancestors 'none'"
     response.headers["Cache-Control"]="no-store"
     return response
 @app.get("/")
