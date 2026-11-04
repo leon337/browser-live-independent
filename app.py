@@ -1,7 +1,7 @@
 from __future__ import annotations
 import asyncio, contextlib, json, os, sqlite3, time, uuid, logging, re, secrets
 from pathlib import Path
-from contextlib import asynccontextmanager
+from contextlib import asynccontextmanager, contextmanager
 from urllib.parse import urlsplit
 from fastapi import FastAPI, WebSocket, WebSocketDisconnect, HTTPException, Request
 from fastapi.responses import FileResponse
@@ -31,10 +31,19 @@ def authorized_ws(ws):
 def clean(value):
     s=str(value).replace(KEY,"[redacted]")
     return re.sub(r"\b(?:AIza[\w-]{25,}|nvapi-[\w-]{16,}|sk-[\w-]{16,})\b","[redacted]",s)
+@contextmanager
 def db():
+    """sqlite3.Connection context manager alone does not close the connection."""
     conn=sqlite3.connect(STATE/"history.sqlite3")
-    conn.execute("CREATE TABLE IF NOT EXISTS events (id INTEGER PRIMARY KEY, time REAL, kind TEXT, text TEXT)")
-    return conn
+    try:
+        conn.execute("CREATE TABLE IF NOT EXISTS events (id INTEGER PRIMARY KEY, time REAL, kind TEXT, text TEXT)")
+        yield conn
+        conn.commit()
+    except Exception:
+        conn.rollback()
+        raise
+    finally:
+        conn.close()
 def record(kind,text):
     with db() as c:
         c.execute("INSERT INTO events(time,kind,text) VALUES(?,?,?)",(time.time(),kind,clean(text)[:12000]))
@@ -43,6 +52,8 @@ class Runtime:
     def __init__(self):
         self.browser=None; self.agent=None; self.task=None; self.current=None
         self.clients=set(); self.lock=asyncio.Lock(); self.browser_lock=asyncio.Lock(); self.generation=0
+        self.cdp_healthy=None; self.cdp_last_checked_at=None
+        self.cdp_probe_lock=asyncio.Lock()
         try:
             self.current=json.loads((STATE/"task.json").read_text())
             if self.current and self.current["state"]=="running":
@@ -59,21 +70,77 @@ class Runtime:
         for ws in list(self.clients):
             try: await ws.send_json(message)
             except Exception: self.clients.discard(ws)
+    async def check_cdp(self,browser=None,attempts=2):
+        """Check responsiveness with an actual CDP roundtrip, not only an open socket."""
+        target=browser if browser is not None else self.browser
+        if target is None:
+            self.cdp_healthy=None
+            return False
+        async with self.cdp_probe_lock:
+            for index in range(attempts):
+                try:
+                    if not target.is_cdp_connected:
+                        raise ConnectionError("CDP socket is not open")
+                    await asyncio.wait_for(target.cdp_client.send.Browser.getVersion(),timeout=3)
+                    if target is self.browser:
+                        self.cdp_healthy=True; self.cdp_last_checked_at=time.time()
+                    return True
+                except (Exception,asyncio.TimeoutError) as error:
+                    logging.warning("CDP health probe %s/%s failed: %s",index+1,attempts,type(error).__name__)
+                    if index+1 < attempts:
+                        await asyncio.sleep(0.2)
+            if target is self.browser:
+                self.cdp_healthy=False; self.cdp_last_checked_at=time.time()
+            return False
+
+    async def monitor_cdp(self):
+        """Passive during agent tasks; never kills or restarts a browser."""
+        while True:
+            try:
+                if self.browser is None:
+                    self.cdp_healthy=None
+                elif self.agent is not None or self.browser_lock.locked():
+                    if not self.browser.is_cdp_connected:
+                        self.cdp_healthy=False; self.cdp_last_checked_at=time.time()
+                else:
+                    await self.check_cdp(self.browser,attempts=1)
+            except asyncio.CancelledError:
+                raise
+            except Exception as error:
+                logging.warning("CDP monitor failure: %s",type(error).__name__)
+                self.cdp_healthy=False; self.cdp_last_checked_at=time.time()
+            await asyncio.sleep(15)
+
     async def get_browser(self):
         async with self.browser_lock:
-            if self.browser is None:
-                from browser_use import Browser
-                candidate=Browser(executable_path="/usr/bin/brave-browser",
-                    user_data_dir=str(STATE/"browser-profile"),headless=False,
-                    keep_alive=True, enable_default_extensions=False,
-                    args=["--no-first-run","--no-default-browser-check"],
-                    window_size={"width":1100,"height":720})
-                try: await candidate.start()
-                except Exception:
-                    with contextlib.suppress(Exception): await candidate.kill()
-                    raise
+            if self.browser is not None:
+                if await self.check_cdp(self.browser):
+                    return self.browser
+                if self.agent is not None:
+                    raise RuntimeError("CDP indisponível durante a tarefa; recuperação bloqueada")
+                stale=self.browser
+                self.browser=None
+                with contextlib.suppress(Exception):
+                    await asyncio.wait_for(stale.kill(),timeout=8)
+                logging.warning("Discarded unresponsive BrowserSession; rebuilding")
+            from browser_use import Browser
+            candidate=Browser(executable_path="/usr/bin/brave-browser",
+                user_data_dir=str(STATE/"browser-profile"),headless=False,
+                keep_alive=True, enable_default_extensions=False,
+                args=["--no-first-run","--no-default-browser-check"],
+                window_size={"width":1100,"height":720})
+            try:
+                await candidate.start()
                 self.browser=candidate
-            return self.browser
+                if not await self.check_cdp(candidate):
+                    raise RuntimeError("New browser did not answer CDP health check")
+            except Exception:
+                self.browser=None
+                self.cdp_healthy=False; self.cdp_last_checked_at=time.time()
+                with contextlib.suppress(Exception):
+                    await asyncio.wait_for(candidate.kill(),timeout=8)
+                raise
+            return candidate
     async def start(self,objective):
         async with self.lock:
             if self.task and not self.task.done(): return {"ok":False,"error":"Há uma tarefa em andamento. Pare-a antes de iniciar outra."}
@@ -135,10 +202,15 @@ class Runtime:
 runtime=Runtime()
 @asynccontextmanager
 async def lifespan(app):
-    yield
-    await runtime.stop()
-    if runtime.browser:
-        with contextlib.suppress(Exception): await runtime.browser.kill()
+    health_monitor=asyncio.create_task(runtime.monitor_cdp())
+    try:
+        yield
+    finally:
+        health_monitor.cancel()
+        await asyncio.gather(health_monitor,return_exceptions=True)
+        await runtime.stop()
+        if runtime.browser:
+            with contextlib.suppress(Exception): await runtime.browser.kill()
 app=FastAPI(lifespan=lifespan)
 @app.middleware("http")
 async def origin_guard(request,call_next):
@@ -161,7 +233,8 @@ app.mount("/static",StaticFiles(directory=ROOT/"static"),name="static")
 @app.get("/api/status")
 async def status():
     return {"ready":bool(KEY),"live_model":SETTINGS["live_model"],"planner_model":SETTINGS["planner_model"],"fallback_model":SETTINGS.get("fallback_model"),
-        "task":runtime.current,"independent":True,"browser_started":runtime.browser is not None}
+        "task":runtime.current,"independent":True,"browser_started":runtime.browser is not None,
+        "cdp_healthy":runtime.cdp_healthy,"cdp_last_checked_at":runtime.cdp_last_checked_at}
 @app.get("/api/history")
 async def history():
     with db() as c: rows=c.execute("SELECT time,kind,text FROM events ORDER BY id DESC LIMIT 80").fetchall()

@@ -11,6 +11,12 @@ Environment=ANONYMIZED_TELEMETRY=false
 Environment=BROWSER_USE_LOGGING_LEVEL=error
 Environment=BROWSER_USE_CLOUD_SYNC=false
 UMask=0077
+# Initial safeguards for the 8 GiB notebook. Tune with PSI/cgroup measurements.
+# MemoryHigh throttles; MemoryMax can trigger cgroup OOM under sustained pressure.
+MemoryAccounting=yes
+MemoryHigh=3500M
+MemoryMax=4500M
+MemorySwapMax=512M
 Restart=on-failure
 RestartSec=3
 TimeoutStopSec=30
